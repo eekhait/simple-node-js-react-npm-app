@@ -1,20 +1,16 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:lts-buster-slim'
-            args '-p 3000:3000'
-        }
-    }
-    environment { 
-        CI = 'true'
-    }
-    stages {
-        stage('Build') {
-            steps {
-                sh 'npm install'
-            }
-        }
-        stage('OWASP DependencyCheck') {
+	options {
+    timestamps() // Append timestamps to each line
+    timeout(time: 20, unit: 'MINUTES') // Set a timeout on the total execution time of the job
+  	}
+	agent any
+	stages {
+		stage('Checkout') { // Checkout (git clone ...) the projects repository
+			steps {
+				checkout scm
+			}
+		}
+		stage('OWASP DependencyCheck') {
 			steps {
 				dependencyCheck additionalArguments: '--format HTML --format XML', odcInstallation: 'Default'
 			}
@@ -24,17 +20,5 @@ pipeline {
 				}
 			}
 		}
-        stage('Test') {
-            steps {
-                sh './jenkins/scripts/test.sh'
-            }
-        }
-        stage('Deliver') { 
-            steps {
-                sh './jenkins/scripts/deliver.sh' 
-                input message: 'Finished using the web site? (Click "Proceed" to continue)' 
-                sh './jenkins/scripts/kill.sh' 
-            }
-        }
-    }
+	}
 }
